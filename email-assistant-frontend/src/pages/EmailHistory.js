@@ -191,7 +191,7 @@ const EmailHistory = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {getActionIcon(selectedEmail.action)}
             <Typography variant="h6" component="span" sx={{ fontWeight: 500 }}>
-              {selectedEmail.action.charAt(0).toUpperCase() + selectedEmail.action.slice(1)}d Email
+              {selectedEmail.action.charAt(0).toUpperCase() + selectedEmail.action.slice(1)} Email
             </Typography>
           </Box>
           <Box>
