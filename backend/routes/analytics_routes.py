@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.db import get_db_connection
+from db import get_db_connection
 
 analytics_bp = Blueprint("analytics", __name__)
 
