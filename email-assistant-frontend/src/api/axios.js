@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://echomail-backend-finale.vercel.app";
+const API_BASE_URL = "https://echomail-one.vercel.app";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
