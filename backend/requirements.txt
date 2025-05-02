@@ -7,6 +7,6 @@ google-api-python-client==2.82.0
 mysql-connector-python==8.0.32
 werkzeug==2.3.4
 google-generativeai==0.2.0
-yagmail==0.15.224
+yagmail==0.15.293
 fitz==1.0.0
 docx2txt==0.8
