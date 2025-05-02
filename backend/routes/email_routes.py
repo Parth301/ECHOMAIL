@@ -1,7 +1,8 @@
 import smtplib
 import os
-import pdfplumber
-import docx
+import fitz  # PyMuPDF for PDF
+import docx2txt  # Lightweight Word text extraction
+import yagmail  # Simple SMTP client for emails
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import google.generativeai as genai
@@ -9,12 +10,8 @@ from db import get_db_connection
 from models import EmailLog  
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from flask_cors import cross_origin
-from werkzeug.utils import secure_filename
-from email.mime.application import MIMEApplication
-from email.mime.base import MIMEBase
-from email import encoders
-import mimetypes
+from flask import current_app
+from pathlib import Path
 
 email_bp = Blueprint("email", __name__)
 
@@ -26,7 +23,7 @@ UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Load sensitive data from environment variables
-EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "jaypatil1965@gmail.com")
+EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "jaypatil1965@gmail.com)
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "zcqjydkosxtpcjpj")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyB86qZ63GF9PXz6Q8EJkJPvEvv7DjrHnxw")
 
@@ -42,6 +39,22 @@ def allowed_file(filename):
     """
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def extract_text_from_pdf(file_path):
+    """
+    Extract text content from a PDF file
+    """
+    doc = fitz.open(file_path)
+    text = ""
+    for page in doc:
+        text += page.get_text("text")
+    return text
+
+def extract_text_from_docx(file_path):
+    """
+    Extract text content from a DOCX file
+    """
+    return docx2txt.process(file_path)
+
 def extract_text_from_file(file_path):
     """
     Extract text content from different file types
@@ -49,16 +62,14 @@ def extract_text_from_file(file_path):
     ext = file_path.rsplit(".", 1)[1].lower()
     try:
         if ext == "pdf":
-            with pdfplumber.open(file_path) as pdf:
-                return "\n".join([page.extract_text() for page in pdf.pages if page.extract_text()])
+            return extract_text_from_pdf(file_path)
         elif ext == "docx":
-            doc = docx.Document(file_path)
-            return "\n".join([para.text for para in doc.paragraphs])
+            return extract_text_from_docx(file_path)
         elif ext == "txt":
             with open(file_path, "r", encoding="utf-8") as file:
                 return file.read()
     except Exception as e:
-        print(f"Error extracting text from {file_path}: {e}")
+        print(f"Error extracting text: {e}")
     return ""
 
 def generate_advanced_prompt(base_prompt, tone='professional', length='medium', language='English'):
@@ -149,9 +160,9 @@ def refine_advanced_text(text, tone='professional', length='medium', language='E
 
     return advanced_prompt
 
+# Generate email route
 @email_bp.route("/generate", methods=["POST"])
 @jwt_required()
-@cross_origin()
 def generate():
     data = request.get_json()
     user_id = get_jwt_identity()["id"]  # Get user ID from JWT token
@@ -191,9 +202,9 @@ def generate():
         print(f"🔥 Error in generate(): {str(e)}")
         return jsonify({"error": f"Backend error: {str(e)}"}), 500
 
+# Refine email route
 @email_bp.route("/refine", methods=["POST"])
 @jwt_required()
-@cross_origin()
 def refine_email():
     user_id = get_jwt_identity()["id"]
 
@@ -258,60 +269,28 @@ def refine_email():
     except Exception as e:
         return jsonify({"error": f"Backend error: {str(e)}"}), 500
 
-# Existing send_email route remains the same
+# Send email route using yagmail
 @email_bp.route("/send", methods=["POST"])
 @jwt_required()
-@cross_origin()
 def send_email():
     user_id = get_jwt_identity()["id"]
-    
-    # Handle form data instead of JSON for file uploads
     recipient = request.form.get("recipient")
     subject = request.form.get("subject")
     email_content = request.form.get("email_content")
-    
+
     if not recipient or not subject or not email_content:
         return jsonify({"error": "Missing recipient, subject, or email content"}), 400
 
-    # Prepare email
-    msg = MIMEMultipart()
-    msg["From"] = EMAIL_ADDRESS
-    msg["To"] = recipient
-    msg["Subject"] = subject
-    msg.attach(MIMEText(email_content, "plain"))
-    
-    # Handle attachments
-    if 'attachments' in request.files:
-        files = request.files.getlist('attachments')
-        
-        for file in files:
-            if file.filename:
-                # Get file mime type
-                mimetype, _ = mimetypes.guess_type(file.filename)
-                if mimetype is None:
-                    mimetype = 'application/octet-stream'
-                
-                maintype, subtype = mimetype.split('/', 1)
-                
-                # Create the attachment
-                attachment = MIMEBase(maintype, subtype)
-                attachment.set_payload(file.read())
-                encoders.encode_base64(attachment)
-                attachment.add_header('Content-Disposition', 'attachment', 
-                                     filename=file.filename)
-                msg.attach(attachment)
-
     try:
-        # Initialize SMTP server
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()
-        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_ADDRESS, recipient, msg.as_string())
-        server.quit()
+        # Send email using yagmail
+        yag = yagmail.SMTP(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        yag.send(to=recipient, subject=subject, contents=email_content)
 
-        # Log the email action
-        EmailLog(user_id=user_id, email_content=email_content, action="sent")
+        # Log email sending action
+        EmailLog(user_id, email_content, "sent")
 
-        return jsonify({"message": "Email sent successfully!"}), 200
+        return jsonify({"message": "Email sent successfully!"})
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"🔥 Error in send_email(): {str(e)}")
+        return jsonify({"error": f"Failed to send email: {str(e)}"}), 500
