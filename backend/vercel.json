@@ -1,18 +1,13 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://your-backend-url.com/api/$1"
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.9"
     }
-  ],
-  "redirects": [
+  },
+  "routes": [
     {
-      "source": "/",
-      "destination": "/",
-      "statusCode": 308
+      "src": "/(.*)",
+      "dest": "/api/index.py"
     }
-  ],
-  "projects": {
-    "framework": "create-react-app"
-  }
+  ]
 }
