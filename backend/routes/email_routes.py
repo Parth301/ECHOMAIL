@@ -1,30 +1,28 @@
 import smtplib
 import os
-import fitz  # PyMuPDF - lightweight PDF reader
-import docx  # python-docx is already fairly light
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-import google.generativeai as genai
-from backend.db import get_db_connection
-from backend.models import EmailLog
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from flask_cors import cross_origin
 from werkzeug.utils import secure_filename
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 import mimetypes
+import requests
+from PyPDF2 import PdfReader
+
+from backend.db import get_db_connection
+from backend.models import EmailLog
 
 email_bp = Blueprint("email", __name__)
-ALLOWED_EXTENSIONS = {"txt", "pdf", "docx"}
+ALLOWED_EXTENSIONS = {"txt", "pdf"}
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "jaypatil1965@gmail.com")
+EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "jaypatil1965@gmail.com)
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "zcqjydkosxtpcjpj")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyB86qZ63GF9PXz6Q8EJkJPvEvv7DjrHnxw")
-genai.configure(api_key=GEMINI_API_KEY)
-GEMINI_MODEL = "models/gemini-1.5-pro-002"
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -33,21 +31,27 @@ def extract_text_from_file(file_path):
     ext = file_path.rsplit(".", 1)[1].lower()
     try:
         if ext == "pdf":
-            text = ""
-            doc = fitz.open(file_path)
-            for page in doc:
-                text += page.get_text()
-            doc.close()
-            return text
-        elif ext == "docx":
-            doc = docx.Document(file_path)
-            return "\n".join(para.text for para in doc.paragraphs)
+            reader = PdfReader(file_path)
+            return "".join(page.extract_text() or "" for page in reader.pages)
         elif ext == "txt":
-            with open(file_path, "r", encoding="utf-8") as file:
-                return file.read()
+            with open(file_path, "r", encoding="utf-8") as f:
+                return f.read()
     except Exception as e:
-        print(f"Error extracting text from {file_path}: {e}")
+        print(f"Error extracting text: {e}")
     return ""
+
+def call_gemini_api(prompt):
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {GEMINI_API_KEY}"
+    }
+    body = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+    res = requests.post(url, headers=headers, json=body)
+    data = res.json()
+    return data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
 
 def generate_advanced_prompt(base_prompt, tone='professional', length='medium', language='English'):
     tone_mapping = {
@@ -65,9 +69,9 @@ def generate_advanced_prompt(base_prompt, tone='professional', length='medium', 
 
     language_mapping = {
         'English': "Write the email in standard American English.",
-        'Spanish': "Write the email in standard spanish.",
-        'German': "Write the email in standard german.",
-        'French': "Write the email in standard french."
+        'Spanish': "Write the email in standard Spanish.",
+        'German': "Write the email in standard German.",
+        'French': "Write the email in standard French."
     }
 
     return f"""
@@ -127,7 +131,6 @@ def refine_advanced_text(text, tone='professional', length='medium', language='E
 def generate():
     data = request.get_json()
     user_id = get_jwt_identity()["id"]
-
     prompt = data.get("prompt", "")
     tone = data.get("tone", "professional")
     length = data.get("length", "medium")
@@ -138,16 +141,14 @@ def generate():
 
     try:
         advanced_prompt = generate_advanced_prompt(prompt, tone, length, language)
-        model = genai.GenerativeModel(GEMINI_MODEL)
-        response = model.generate_content(advanced_prompt)
+        response_text = call_gemini_api(advanced_prompt)
 
-        if not response.text:
+        if not response_text:
             return jsonify({"error": "Empty Gemini response"}), 500
 
-        EmailLog(user_id, response.text, "generated")
-
+        EmailLog(user_id, response_text, "generated")
         return jsonify({
-            "email_content": response.text,
+            "email_content": response_text,
             "settings": {"tone": tone, "length": length, "language": language}
         })
     except Exception as e:
@@ -183,14 +184,13 @@ def refine_email():
         return jsonify({"error": "Empty content"}), 400
 
     try:
-        model = genai.GenerativeModel(GEMINI_MODEL)
         advanced_prompt = refine_advanced_text(email_content, tone, length, language)
-        response = model.generate_content(advanced_prompt)
+        response_text = call_gemini_api(advanced_prompt)
 
-        if not response.text:
+        if not response_text:
             return jsonify({"error": "Empty Gemini response"}), 500
 
-        refined_email = response.text.strip().lstrip("# ").lstrip("Refined Text:").strip()
+        refined_email = response_text.strip().lstrip("# ").lstrip("Refined Text:").strip()
         EmailLog(user_id, refined_email, "refined")
 
         return jsonify({
@@ -219,8 +219,7 @@ def send_email():
     msg.attach(MIMEText(email_content, "plain"))
 
     if 'attachments' in request.files:
-        files = request.files.getlist('attachments')
-        for file in files:
+        for file in request.files.getlist('attachments'):
             if file.filename:
                 mimetype, _ = mimetypes.guess_type(file.filename)
                 mimetype = mimetype or 'application/octet-stream'
