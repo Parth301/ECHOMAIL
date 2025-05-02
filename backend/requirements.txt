@@ -1,9 +1,9 @@
-Flask
-flask-cors
-flask-jwt-extended
-pdfplumber
-python-docx
-google-api-python-client
-mysql-connector-python
-Werkzeug
-google-generativeai
+Flask==2.3.0
+flask-cors==3.1.1
+flask-jwt-extended==4.4.0
+PyMuPDF==1.18.19  # Replacing pdfplumber with PyMuPDF for PDF text extraction
+docx2txt==0.8  # Replacing python-docx with docx2txt for lighter Word document handling
+google-generativeai==0.1.0  # Keeping google-generativeai for Gemini integration
+yagmail==0.15.267  # Using yagmail for simplified email sending
+mysql-connector-python==8.0.32
+Werkzeug==2.3.0  # Werkzeug is still needed for secure_filename
