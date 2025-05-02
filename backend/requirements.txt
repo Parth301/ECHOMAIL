@@ -1,0 +1,8 @@
+Flask
+flask-cors
+flask-jwt-extended
+pdfplumber
+python-docx
+google-api-python-client
+mysql-connector-python
+Werkzeug
