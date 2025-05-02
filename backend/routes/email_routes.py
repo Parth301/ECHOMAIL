@@ -1,3 +1,4 @@
+import tempfile
 import smtplib
 import os
 from flask import Blueprint, request, jsonify
@@ -17,8 +18,7 @@ from models import EmailLog
 
 email_bp = Blueprint("email", __name__)
 ALLOWED_EXTENSIONS = {"txt", "pdf"}
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+UPLOAD_FOLDER = tempfile.mkdtemp()
 
 EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "jaypatil1965@gmail.com")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "zcqjydkosxtpcjpj")
