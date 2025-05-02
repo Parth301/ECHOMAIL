@@ -1,0 +1,10 @@
+flask
+flask-cors
+flask-jwt-extended
+mysql-connector-python
+werkzeug
+google-generativeai
+yagmail
+PyMuPDF
+python-docx
+setuptools
