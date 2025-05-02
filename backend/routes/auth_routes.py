@@ -5,7 +5,7 @@ from flask import Blueprint, request, jsonify
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from backend.db import get_db_connection
+from db import get_db_connection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, 
