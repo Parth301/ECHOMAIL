@@ -5,8 +5,8 @@ import docx
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import google.generativeai as genai
-from backend.db import get_db_connection
-from backend.models import EmailLog  
+from db import get_db_connection
+from models import EmailLog  
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask_cors import cross_origin
