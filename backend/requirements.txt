@@ -6,3 +6,4 @@ python-docx
 google-api-python-client
 mysql-connector-python
 Werkzeug
+google-generativeai
