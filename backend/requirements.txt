@@ -8,3 +8,4 @@ yagmail==0.15.293
 PyMuPDF==1.23.7
 python-docx==1.1.0
 google-api-core==2.14.0
+setuptools==69.5.1
