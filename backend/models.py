@@ -1,7 +1,7 @@
 import mysql.connector
 from flask_jwt_extended import create_access_token
 from datetime import datetime, timezone
-from backend.db import get_db_connection  # Ensure this function is properly defined
+from db import get_db_connection  # Ensure this function is properly defined
 
 # ✅ Function to Get User by Email
 def User(email):
