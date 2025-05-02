@@ -12,8 +12,8 @@ import mimetypes
 import requests
 from PyPDF2 import PdfReader
 
-from backend.db import get_db_connection
-from backend.models import EmailLog
+from db import get_db_connection
+from models import EmailLog
 
 email_bp = Blueprint("email", __name__)
 ALLOWED_EXTENSIONS = {"txt", "pdf"}
