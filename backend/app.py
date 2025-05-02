@@ -1,12 +1,12 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from backend.config import Config
-from backend.routes.auth_routes import auth_bp
-from backend.routes.email_routes import email_bp
-from backend.routes.analytics_routes import analytics_bp
-from backend.routes.admin_routes import admin_bp
-from backend.routes.user_logs import user_logs_bp
+from config import Config
+from routes.auth_routes import auth_bp
+from routes.email_routes import email_bp
+from routes.analytics_routes import analytics_bp
+from routes.admin_routes import admin_bp
+from routes.user_logs import user_logs_bp
 from flask import Flask, jsonify
 
 app = Flask(__name__)
