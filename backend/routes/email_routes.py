@@ -20,7 +20,7 @@ ALLOWED_EXTENSIONS = {"txt", "pdf"}
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "jaypatil1965@gmail.com)
+EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "jaypatil1965@gmail.com")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "zcqjydkosxtpcjpj")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyB86qZ63GF9PXz6Q8EJkJPvEvv7DjrHnxw")
 
