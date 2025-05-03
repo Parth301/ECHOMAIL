@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from 'axios';
+import api  from 'axios';
 import {
   Container,
   Typography,
@@ -213,7 +213,7 @@ const AdminDashboard = () => {
 
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/admin/users`, {
+        const response = await api.get(`${process.env.REACT_APP_API_URL}/admin/users`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -249,7 +249,7 @@ const AdminDashboard = () => {
   const fetchUserLogs = async (userId) => {
     const token = localStorage.getItem("token");
     try {
-      const logsResponse = await axios.get(
+      const logsResponse = await api.get(
         `${process.env.REACT_APP_API_URL}/admin/logs/${userId}`, 
         {
           headers: {
