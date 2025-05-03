@@ -966,49 +966,43 @@ const Dashboard = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   }, []);
 
+// Fetch analytics data
   const fetchAnalytics = useCallback(async () => {
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-  if (!token) {
-    console.error("❌ No token found. User not authenticated.");
-    navigate("/login");
-    return;
-  }
-
-  try {
-    setIsLoading(true);
-    
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/analytics/api/analytics`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({}),  // Empty body as the backend may expect this
-      signal: controller.signal
-    });
-
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        throw new Error("Authentication expired. Please login again.");
-      } else {
-        throw new Error(`Server error: ${response.status}`);
-      }
+    if (!token) {
+      console.error("❌ No token found. User not authenticated.");
+      navigate("/login");
+      return;
     }
 
-    const data = await response.json();
-    console.log("Analytics Data:", data);  // Debugging
-  } catch (error) {
-    console.error("❌ Error fetching analytics:", error.message);
-  } finally {
-    setIsLoading(false);
-  }
-}, []);
+    try {
+      setIsLoading(true);
+      
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(${process.env.REACT_APP_API_URL}/analytics/api/analytics, {
+        method: "POST",
+        headers: {
+          "Authorization": Bearer ${token},
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({}),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("Authentication expired. Please login again.");
+        } else {
+          throw new Error(Server error: ${response.status});
+        }
+      }
+
+      const data = await response.json();
       
       const processedData = {
         total_emails: Number(data.total_emails) || 0,
