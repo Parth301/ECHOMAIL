@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
-import axios from "axios";
+import api from "axios";
 import { useNavigate } from "react-router-dom";
 import { 
   Box, 
@@ -130,7 +130,7 @@ const EmailAssistant = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(
+      const response = await api.post(
         `/email/generate`,
         { 
           prompt,
@@ -176,7 +176,7 @@ const EmailAssistant = () => {
     formData.append("language", advancedSettings.language);
 
     try {
-      const response = await axios.post(
+      const response = await api.post(
         "/email/refine",
         formData,
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
@@ -240,7 +240,7 @@ const EmailAssistant = () => {
         formData.append("attachments", file);
       });
 
-      const response = await axios.post(
+      const response = await api.post(
         "/email/send",
         formData,
         { 
