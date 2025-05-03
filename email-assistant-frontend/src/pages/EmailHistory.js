@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "axios";
 import { 
   Box, 
   Container, 
@@ -69,7 +69,7 @@ const EmailHistory = () => {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get("/userlogs/my-logs", {
+      const response = await api.get("/userlogs/my-logs", {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
       
