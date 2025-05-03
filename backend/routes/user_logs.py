@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # Create user blueprint
 user_logs_bp = Blueprint("userlogs", __name__)
 
-@user_logs_bp.route("/my-logs", methods=["GET"])
+@user_logs_bp.route("/my-logs", methods=["POST"])
 @jwt_required()
 def get_my_logs():
     """
