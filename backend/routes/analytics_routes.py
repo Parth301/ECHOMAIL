@@ -4,7 +4,7 @@ from db import get_db_connection
 
 analytics_bp = Blueprint("analytics", __name__)
 
-@analytics_bp.route("/api/analytics", methods=["GET"])
+@analytics_bp.route("/api/analytics", methods=["POST"])
 @jwt_required()
 def get_analytics():
     """
