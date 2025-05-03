@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # Create admin blueprint
 admin_bp = Blueprint("admin", __name__)
 
-@admin_bp.route("/users", methods=["GET"])
+@admin_bp.route("/users", methods=["POST"])
 @jwt_required()  # Require valid JWT token
 def get_users():
     """
@@ -55,7 +55,7 @@ def get_users():
         logger.error(f"Unexpected error in get_users: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
-@admin_bp.route("/logs/<int:user_id>", methods=["GET"])
+@admin_bp.route("/logs/<int:user_id>", methods=["POST"])
 @jwt_required()  # Require valid JWT token
 def get_user_logs(user_id):
     """
