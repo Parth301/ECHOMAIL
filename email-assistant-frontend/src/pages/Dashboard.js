@@ -983,7 +983,7 @@ const Dashboard = () => {
       const timeout = setTimeout(() => controller.abort(), 8000);
 
       const response = await fetch(`${process.env.REACT_APP_API_URL}/analytics/api/analytics`, {
-        method: "GET",
+        method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
