@@ -838,7 +838,7 @@ const EmailAssistant = () => {
                         size="small"
                         color="secondary"
                         sx={{
-                          backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                          backgroundColor: '#8b5cf6',
                           borderColor: '#8b5cf6',
                           fontWeight: 500
                         }}
