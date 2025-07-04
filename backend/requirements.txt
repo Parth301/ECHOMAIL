@@ -5,6 +5,6 @@ mysql-connector-python
 werkzeug
 requests
 PyPDF2
-google-genai
 pdfplumber
 docx2txt
+google-generativeai
