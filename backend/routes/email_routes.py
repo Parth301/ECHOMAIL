@@ -1,7 +1,7 @@
 import smtplib
 import os
 import pdfplumber
-import document_processor
+import docx
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import google.generativeai as genai
