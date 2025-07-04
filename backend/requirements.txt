@@ -8,4 +8,3 @@ PyPDF2
 google-genai
 pdfplumber
 docx
-exceptions
