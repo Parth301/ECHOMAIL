@@ -1,0 +1,7 @@
+1. Go to Email-Assitant-new folder
+2. right click and click on open with vs code
+3. in vs code open 2 terminal
+4. in first terminal write command - "python -m backend.app" and backend will run
+5. in 2 terminal write "cd email-assistant-frontend" hit enter then write npm start and it will open the project in a browser.
+
+ps; dont forget to setup the database
