@@ -1,7 +1,7 @@
 import smtplib
 import os
 import pdfplumber
-import docx
+import document_processor
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import google.generativeai as genai
@@ -15,6 +15,7 @@ from email.mime.application import MIMEApplication
 from email.mime.base import MIMEBase
 from email import encoders
 import mimetypes
+from warnings import PendingDeprecationWarning
 
 email_bp = Blueprint("email", __name__)
 
