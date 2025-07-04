@@ -1,7 +1,7 @@
 import smtplib
 import os
-import pdfplumber
-import docx2txt
+import fitz  # PyMuPDF
+import docx  # python-docx
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import google.generativeai as genai
@@ -22,6 +22,7 @@ ALLOWED_EXTENSIONS = {"txt", "pdf", "docx"}
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Environment variables
 EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "jaypatil1965@gmail.com")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "zcqjydkosxtpcjpj")
 GEMINI_API_KEY = "AIzaSyBq7sDIOg7hyww-mmKdNRk8u8CC5cYP--w"
@@ -35,10 +36,11 @@ def extract_text_from_file(file_path):
     ext = file_path.rsplit(".", 1)[1].lower()
     try:
         if ext == "pdf":
-            with pdfplumber.open(file_path) as pdf:
-                return "\n".join([page.extract_text() for page in pdf.pages if page.extract_text()])
+            doc = fitz.open(file_path)
+            return "\n".join([page.get_text() for page in doc])
         elif ext == "docx":
-            return docx2txt.process(file_path)
+            docx_file = docx.Document(file_path)
+            return "\n".join([para.text for para in docx_file.paragraphs])
         elif ext == "txt":
             with open(file_path, "r", encoding="utf-8") as file:
                 return file.read()
@@ -53,40 +55,31 @@ def generate_advanced_prompt(base_prompt, tone='professional', length='medium', 
         'formal': "Use a highly structured and traditional formal tone.",
         'casual': "Use a relaxed, informal, and personal tone."
     }
-
     length_mapping = {
         'short': "Keep the email brief and to the point, under 100 words.",
         'medium': "Aim for a balanced email length, around 150-250 words.",
         'long': "Provide a comprehensive and detailed email, approximately 300-400 words."
     }
-
     language_mapping = {
         'English': "Write the email in standard American English.",
-        'Spanish': "Write the email in standard spanish.",
-        'German': "Write the email in standard german.",
-        'French': "Write the email in standard french."
+        'Spanish': "Write the email in standard Spanish.",
+        'German': "Write the email in standard German.",
+        'French': "Write the email in standard French."
     }
-
-    advanced_prompt = f"""
+    return f"""
     Task: Generate an email based on the following requirements:
 
     Original Prompt: {base_prompt}
 
-    Tone Guidelines: {tone_mapping.get(tone, tone_mapping['professional'])}
-
-    Length Specification: {length_mapping.get(length, length_mapping['medium'])}
-
-    Language: {language_mapping.get(language, language_mapping['English'])}
+    Tone Guidelines: {tone_mapping.get(tone)}
+    Length Specification: {length_mapping.get(length)}
+    Language: {language_mapping.get(language)}
 
     Important Instructions:
-    - ONLY return the genrated text
-    - Do NOT include any additional explanations, comments, or suggestions
-    - Provide ONLY the generated email/text content
-    - No metadata or extra information should be included
-
-    Please generate an email that adheres to these specific guidelines.
+    - ONLY return the generated text
+    - Do NOT include any explanations, comments, or suggestions
+    - No metadata or extra formatting
     """
-    return advanced_prompt
 
 def refine_advanced_text(text, tone='professional', length='medium', language='English'):
     tone_mapping = {
@@ -95,40 +88,32 @@ def refine_advanced_text(text, tone='professional', length='medium', language='E
         'formal': "Revise the text to be more structured, traditional, and academically oriented.",
         'casual': "Adjust the text to be more relaxed, informal, and personal."
     }
-
     length_mapping = {
         'short': "Condense the text while preserving key information. Aim to reduce overall length.",
         'medium': "Refine and balance the text, ensuring it's neither too brief nor too verbose.",
         'long': "Expand on key points, add more context and detail where appropriate."
     }
-
     language_mapping = {
         'English': "Ensure the text follows standard American English grammar and style.",
-        'Spanish': "Adapt the text to standard spanish language conventions.",
-        'German': "Modify the text to align with standard german language guidelines.",
-        'French': "Revise the text to conform to standard french language rules."
+        'Spanish': "Adapt the text to standard Spanish language conventions.",
+        'German': "Modify the text to align with standard German language guidelines.",
+        'French': "Revise the text to conform to standard French language rules."
     }
-
-    advanced_prompt = f"""
+    return f"""
     Task: Refine the following text with specific guidelines:
 
     Original Text:
     {text}
 
-    Refinement Guidelines:
-    1. Tone: {tone_mapping.get(tone, tone_mapping['professional'])}
-    2. Length Adjustment: {length_mapping.get(length, length_mapping['medium'])}
-    3. Language Styling: {language_mapping.get(language, language_mapping['English'])}
+    Guidelines:
+    1. Tone: {tone_mapping.get(tone)}
+    2. Length: {length_mapping.get(length)}
+    3. Language: {language_mapping.get(language)}
 
     Important Instructions:
     - ONLY return the refined text
-    - Do NOT include any additional explanations, comments, or suggestions
-    - Provide ONLY the refined email/text content
-    - No metadata or extra information should be included
-
-    Refined Text:
+    - No headers, markdown, or extra content
     """
-    return advanced_prompt
 
 @email_bp.route("/generate", methods=["POST"])
 @jwt_required()
@@ -145,21 +130,16 @@ def generate():
         return jsonify({"error": "Missing prompt"}), 400
 
     try:
-        advanced_prompt = generate_advanced_prompt(prompt, tone, length, language)
         model = genai.GenerativeModel(GEMINI_MODEL)
-        response = model.generate_content(advanced_prompt)
-
+        response = model.generate_content(generate_advanced_prompt(prompt, tone, length, language))
         if not response.text:
-            return jsonify({"error": "Gemini API returned empty response"}), 500
-
+            return jsonify({"error": "Empty response from Gemini"}), 500
         EmailLog(user_id, response.text, "generated")
-
         return jsonify({
             "email_content": response.text,
             "settings": {"tone": tone, "length": length, "language": language}
         })
     except Exception as e:
-        print(f"🔥 Error in generate(): {str(e)}")
         return jsonify({"error": f"Backend error: {str(e)}"}), 500
 
 @email_bp.route("/refine", methods=["POST"])
@@ -175,7 +155,6 @@ def refine_email():
         return jsonify({"error": "No file or text provided"}), 400
 
     email_content = ""
-
     if "file" in request.files:
         file = request.files["file"]
         if file and allowed_file(file.filename):
@@ -190,24 +169,21 @@ def refine_email():
         email_content = request.form["text"]
 
     if not email_content:
-        return jsonify({"error": "Could not extract content"}), 400
+        return jsonify({"error": "Empty content"}), 400
 
     try:
         model = genai.GenerativeModel(GEMINI_MODEL)
-        advanced_prompt = refine_advanced_text(email_content, tone, length, language)
-        response = model.generate_content(advanced_prompt)
-
+        prompt = refine_advanced_text(email_content, tone, length, language)
+        response = model.generate_content(prompt)
         if not response.text:
-            return jsonify({"error": "Gemini API returned empty response"}), 500
+            return jsonify({"error": "Empty response from Gemini"}), 500
 
-        refined_email = response.text.strip().lstrip('# ').lstrip('Refined Text:').strip()
-        EmailLog(user_id, refined_email, "refined")
-
+        refined = response.text.strip().lstrip('# ').lstrip('Refined Text:').strip()
+        EmailLog(user_id, refined, "refined")
         return jsonify({
-            "refined_email": refined_email,
+            "refined_email": refined,
             "settings": {"tone": tone, "length": length, "language": language}
         })
-
     except Exception as e:
         return jsonify({"error": f"Backend error: {str(e)}"}), 500
 
@@ -230,18 +206,17 @@ def send_email():
     msg.attach(MIMEText(email_content, "plain"))
 
     if 'attachments' in request.files:
-        files = request.files.getlist('attachments')
-        for file in files:
+        for file in request.files.getlist('attachments'):
             if file.filename:
                 mimetype, _ = mimetypes.guess_type(file.filename)
-                if mimetype is None:
+                if not mimetype:
                     mimetype = 'application/octet-stream'
                 maintype, subtype = mimetype.split('/', 1)
-                attachment = MIMEBase(maintype, subtype)
-                attachment.set_payload(file.read())
-                encoders.encode_base64(attachment)
-                attachment.add_header('Content-Disposition', 'attachment', filename=file.filename)
-                msg.attach(attachment)
+                part = MIMEBase(maintype, subtype)
+                part.set_payload(file.read())
+                encoders.encode_base64(part)
+                part.add_header('Content-Disposition', 'attachment', filename=file.filename)
+                msg.attach(part)
 
     try:
         server = smtplib.SMTP("smtp.gmail.com", 587)
@@ -249,8 +224,7 @@ def send_email():
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.sendmail(EMAIL_ADDRESS, recipient, msg.as_string())
         server.quit()
-
-        EmailLog(user_id=user_id, email_content=email_content, action="sent")
+        EmailLog(user_id, email_content, "sent")
         return jsonify({"message": "Email sent successfully!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
