@@ -6,3 +6,4 @@ werkzeug
 requests
 PyPDF2
 google-genai
+pdfplumber
