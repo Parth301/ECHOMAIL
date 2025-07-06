@@ -966,7 +966,7 @@ const Dashboard = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   }, []);
 
-// Fetch analytics data
+  // Fetch analytics data
   const fetchAnalytics = useCallback(async () => {
     const token = localStorage.getItem("token");
 
@@ -982,13 +982,12 @@ const Dashboard = () => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
 
-      const response = await fetch(${process.env.REACT_APP_API_URL}/analytics/api/analytics, {
-        method: "POST",
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/analytics/api/analytics`, {
+        method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({}),
         signal: controller.signal
       });
 
@@ -998,7 +997,7 @@ const Dashboard = () => {
         if (response.status === 401 || response.status === 403) {
           throw new Error("Authentication expired. Please login again.");
         } else {
-          throw new Error(Server error: ${response.status});
+          throw new Error(`Server error: ${response.status}`);
         }
       }
 
