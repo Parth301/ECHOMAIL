@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://echomail-izfm.onrender.com";
+const API_BASE_URL = "https://echomail-sfru.onrender.com";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
