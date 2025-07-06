@@ -972,7 +972,7 @@ const Dashboard = () => {
   try {
     setIsLoading(true);
 
-    const response = await api.post("/api/analytics", {}); // ✅ Axios handles headers & baseURL
+    const response = await api.post("/analytics/api/analytics", {}); // ✅ Axios handles headers & baseURL
 
     const data = response.data;
 
