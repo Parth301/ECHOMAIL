@@ -11,8 +11,9 @@ def get_analytics():
     Fetch analytics data for the logged-in user including trend per weekday.
     """
     identity = get_jwt_identity()
-    
-    if not identity or "id" not in identity:
+
+    # Correct check
+    if not identity or "sub" not in identity or "id" not in identity["sub"]:
         return jsonify({"error": "User ID not found in token"}), 401
 
     user_id = identity["sub"]["id"]
@@ -32,20 +33,17 @@ def get_analytics():
             WHERE user_id = %s;
         """, (user_id,))  
 
-        analytics_data = cursor.fetchone()
-
-        if analytics_data is None:
-            analytics_data = {
-                "total_emails": 0,
-                "generated_count": 0,
-                "refined_count": 0,
-                "sent_count": 0
-            }
+        analytics_data = cursor.fetchone() or {
+            "total_emails": 0,
+            "generated_count": 0,
+            "refined_count": 0,
+            "sent_count": 0
+        }
 
         # Trend by weekday (Mon–Sun)
         cursor.execute("""
             SELECT 
-                DATE_FORMAT(timestamp, '%a') AS day,  -- 'Mon', 'Tue', ...
+                DATE_FORMAT(timestamp, '%a') AS day,
                 COUNT(*) AS count
             FROM email_log
             WHERE user_id = %s
@@ -53,7 +51,6 @@ def get_analytics():
         """, (user_id,))
         trend_rows = cursor.fetchall()
 
-        # Map to full week structure with 0s for missing days
         weekday_order = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
         trend_map = {row['day']: row['count'] for row in trend_rows}
         trend = [{'day': day, 'count': trend_map.get(day, 0)} for day in weekday_order]
@@ -63,11 +60,11 @@ def get_analytics():
             "trend": trend
         }
 
-        print("✅ Analytics Response:", response)  # Debugging
-        return jsonify(response)
+        print("✅ Analytics Response:", response)
+        return jsonify(response), 200
 
     except Exception as e:
-        print(f"❌ Analytics Error: {e}")  # Debugging info
+        print(f"❌ Analytics Error: {e}")
         return jsonify({"error": "Failed to fetch analytics"}), 500
 
     finally:
