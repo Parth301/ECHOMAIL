@@ -15,7 +15,7 @@ def get_analytics():
     if not identity or "id" not in identity:
         return jsonify({"error": "User ID not found in token"}), 401
 
-    user_id = identity["id"]
+    user_id = identity["sub"]["id"]
     print(f"🔍 Fetching analytics for user ID: {user_id}")  # Debugging
 
     conn = get_db_connection()
