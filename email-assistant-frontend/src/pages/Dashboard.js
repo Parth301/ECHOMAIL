@@ -43,6 +43,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
+import api from "../api";
 
 // Updated style constants with more modern gradients
 const styles = {
@@ -967,71 +968,42 @@ const Dashboard = () => {
   }, []);
 
   // Fetch analytics data
-  const fetchAnalytics = useCallback(async () => {
-    const token = localStorage.getItem("token");
+ const fetchAnalytics = useCallback(async () => {
+  try {
+    setIsLoading(true);
 
-    if (!token) {
-      console.error("❌ No token found. User not authenticated.");
-      navigate("/login");
-      return;
+    const response = await api.post("/api/analytics", {}); // ✅ Axios handles headers & baseURL
+
+    const data = response.data;
+
+    const processedData = {
+      total_emails: Number(data.total_emails) || 0,
+      generated_count: Number(data.generated_count) || 0,
+      refined_count: Number(data.refined_count) || 0,
+      sent_count: Number(data.sent_count) || 0,
+      trendData: (data.trend || []).map(entry => ({
+        name: entry.day,
+        value: entry.count
+      }))
+    };
+
+    setAnalytics(processedData);
+    setError(null);
+
+  } catch (error) {
+    console.error("❌ Error fetching analytics:", error);
+
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      setError("Authentication expired. Please login again.");
+      handleLogout();
+    } else {
+      setError(error.response?.data?.error || "Failed to load analytics data");
     }
 
-    try {
-      setIsLoading(true);
-      
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/analytics/api/analytics`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          throw new Error("Authentication expired. Please login again.");
-        } else {
-          throw new Error(`Server error: ${response.status}`);
-        }
-      }
-
-      const data = await response.json();
-      
-      const processedData = {
-        total_emails: Number(data.total_emails) || 0,
-        generated_count: Number(data.generated_count) || 0,
-        refined_count: Number(data.refined_count) || 0,
-        sent_count: Number(data.sent_count) || 0,
-        trendData: (data.trend || []).map(entry => ({
-          name: entry.day,      // Already 'Mon', 'Tue', etc.
-          value: entry.count
-        }))
-      };
-      
-      setAnalytics(processedData);
-      setError(null);
-      
-    } catch (error) {
-      console.error("❌ Error fetching analytics:", error);
-      
-      if (error.name === 'AbortError') {
-        setError("Request timed out. Please try again.");
-      } else {
-        setError(error.message);
-        if (error.message.includes("Authentication")) {
-          handleLogout();
-        }
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [navigate, handleLogout]);
+  } finally {
+    setIsLoading(false);
+  }
+}, [handleLogout]);
 
   // Always fetch fresh data when component mounts or when location changes
   useEffect(() => {
