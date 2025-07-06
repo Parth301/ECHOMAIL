@@ -66,28 +66,35 @@ const EmailHistory = () => {
   };
 
   // Fetch logs from API
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await api.post("/userlogs/my-logs", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      });
-      
-      if (response.data) {
-        // Format timestamps
-        const formattedLogs = response.data.map(log => ({
-          ...log,
-          formattedTime: new Date(log.timestamp).toLocaleString()
-        }));
-        setLogs(formattedLogs);
+const fetchLogs = useCallback(async () => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem("token");
+    const response = await api.post(
+      "/userlogs/my-logs",
+      {}, // empty body
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
       }
-    } catch (err) {
-      console.error("Error fetching email logs:", err);
-      setError(err.response?.data?.error || "Failed to load email history");
-    } finally {
-      setLoading(false);
+    );
+
+    if (response.data) {
+      const formattedLogs = response.data.map(log => ({
+        ...log,
+        formattedTime: new Date(log.timestamp).toLocaleString()
+      }));
+      setLogs(formattedLogs);
     }
-  }, []);
+  } catch (err) {
+    console.error("Error fetching email logs:", err);
+    setError(err.response?.data?.error || "Failed to load email history");
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   // Load logs on component mount
   useEffect(() => {
