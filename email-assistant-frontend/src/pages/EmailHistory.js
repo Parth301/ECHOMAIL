@@ -69,7 +69,7 @@ const EmailHistory = () => {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.get("/userlogs/my-logs", {
+      const response = await api.post("/userlogs/my-logs", {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
       
