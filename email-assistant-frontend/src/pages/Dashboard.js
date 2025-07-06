@@ -43,7 +43,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import api from "../api";
+import api from "axios";
 
 // Updated style constants with more modern gradients
 const styles = {
