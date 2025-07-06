@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://echomail-sfru.onrender.com";
+const API_BASE_URL = "https://echomail-sfru.onrender.com";  // ✅ Use correct Render backend URL
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// ✅ Automatically attach JWT token
+// ✅ Automatically attach JWT token to every request
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -20,5 +20,6 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
 
 export default api;
